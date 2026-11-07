@@ -8,8 +8,8 @@ import smileImg from "@/assets/smile_saper.png.asset.json";
 import wallImg from "@/assets/tetris_shield.png.asset.json";
 import ramImg from "@/assets/ram.png.asset.json";
 import bombImg from "@/assets/bomb.png.asset.json";
-import wormImg from "@/assets/worm_virus.png.asset.json";
-import trojanImg from "@/assets/troyan_horse.png.asset.json";
+import wormImg from "@/assets/worm_virus_walk.gif.asset.json";
+import trojanImg from "@/assets/troyan_horse_wood.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,14 +40,14 @@ const ENEMIES = {
 };
 type EType = keyof typeof ENEMIES;
 interface Unit { type: UType; hp: number; max: number; t: number; recycle: number }
-interface Enemy { id: number; type: EType; row: number; x: number; hp: number; max: number }
+interface Enemy { id: number; type: EType; row: number; x: number; hp: number; max: number; bite: number }
 interface Shot { id: number; row: number; x: number; ch: string }
 interface G {
   ram: number; units: Map<string, Unit>; mines: Set<string>; enemies: Enemy[]; shots: Shot[];
-  queue: { at: number; type: EType }[]; time: number; wave: number; over: boolean; ramT: number; id: number;
+  queue: { at: number; type: EType }[]; lives: number; time: number; wave: number; over: boolean; ramT: number; id: number;
 }
 const key = (r: number, c: number) => `${r},${c}`;
-const fresh = (): G => ({ ram: 300, units: new Map(), mines: new Set(), enemies: [], shots: [], queue: [], time: 0, wave: 0, over: false, ramT: 0, id: 1 });
+const fresh = (): G => ({ ram: 300, units: new Map(), mines: new Set(), enemies: [], shots: [], queue: [], lives: 10, time: 0, wave: 0, over: false, ramT: 0, id: 1 });
 const ASCII = "!@#$%&*{}<>/\\?01";
 
 function tick(g: G, dt: number) {
@@ -59,7 +59,7 @@ function tick(g: G, dt: number) {
   g.queue = g.queue.filter((q) => {
     if (q.at > g.time) return true;
     const d = ENEMIES[q.type];
-    g.enemies.push({ id: g.id++, type: q.type, row: Math.floor(Math.random() * ROWS), x: COLS - 0.01, hp: d.hp, max: d.hp });
+    g.enemies.push({ id: g.id++, type: q.type, row: Math.floor(Math.random() * ROWS), x: COLS - 0.01, hp: d.hp, max: d.hp, bite: 0 });
     return false;
   });
   // units
@@ -109,11 +109,12 @@ function tick(g: G, dt: number) {
     if (g.mines.has(mk)) { g.mines.delete(mk); e.hp -= 8; if (e.hp <= 0) continue; }
     const u = g.units.get(mk);
     if (u) {
-      u.hp -= dt;
-      if (u.hp <= 0) g.units.delete(mk);
+      e.bite += dt;
+      if (e.bite >= 1) { e.bite -= 1; u.hp -= 1; if (u.hp <= 0) g.units.delete(mk); }
     } else {
+      e.bite = 0;
       e.x -= ENEMIES[e.type].speed * dt;
-      if (e.x < 0) { g.over = true; return; }
+      if (e.x < 0) { e.hp = -999; (e as Enemy & { eaten?: boolean }).eaten = true; g.lives--; if (g.lives <= 0) { g.over = true; return; } }
     }
   }
   g.enemies = g.enemies.filter((e) => {
@@ -171,7 +172,7 @@ function Game() {
 
   if (s.over) {
     return (
-      <div className="flex min-h-screen flex-col items-start justify-center gap-6 bg-[var(--bsod)] p-10 font-mono text-[var(--bsod-fg)]">
+      <div className="fixed inset-0 flex flex-col items-start justify-center gap-6 overflow-hidden bg-[var(--bsod)] p-10 font-mono text-[var(--bsod-fg)]">
         <span className="bg-[var(--bsod-fg)] px-2 text-[var(--bsod)]">Windows</span>
         <p className="max-w-2xl">A fatal exception 0E has occurred at 0028:C0011E36 in VXD MALWARE(01). Malware reached your system on wave {s.wave}. The current application will be terminated.</p>
         <p>* Press Restart to reboot your defenses.</p>
@@ -180,30 +181,34 @@ function Game() {
     );
   }
 
+  const fullscreen = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); };
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--desktop)] p-4 font-mono">
-      <div className="win-frame w-full max-w-5xl">
-        <div className="flex items-center justify-between bg-[var(--title)] px-2 py-1 font-bold text-[var(--bsod-fg)]">
-          <span>BSOD_defense.exe</span><span>_ □ ×</span>
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-[var(--desktop)] font-mono">
+      <div className="win-frame m-1 flex min-h-0 flex-1 flex-col">
+        <div className="flex items-center justify-between bg-gradient-to-r from-[var(--title)] to-[var(--title-2)] px-2 py-1 font-bold text-[var(--bsod-fg)]">
+          <span>💾 BSOD_defense.exe</span>
+          <button onClick={fullscreen} className="win-btn px-2 text-xs text-foreground" title="Full screen">□ Full screen</button>
         </div>
-        <div className="flex flex-wrap items-center gap-2 p-2">
-          <div className="win-inset flex items-center gap-1 px-2 py-1">
-            <img src={ramImg.url} alt="RAM" className="h-7 w-7 [image-rendering:pixelated]" />
-            <b>{Math.floor(s.ram)} MB</b>
+        <div className="flex flex-wrap items-stretch gap-2 border-b-2 border-[var(--win-dark)] p-2">
+          <div className="win-inset flex flex-col justify-center gap-1 bg-[var(--panel)] px-3 py-1 text-[var(--shot)]">
+            <div className="flex items-center gap-1"><img src={ramImg.url} alt="RAM" className="h-6 w-6 [image-rendering:pixelated]" /><b>{Math.floor(s.ram)} MB</b></div>
+            <div className="text-[var(--danger-light)]">{"♥".repeat(Math.max(0, s.lives))}<span className="opacity-30">{"♥".repeat(10 - Math.max(0, s.lives))}</span></div>
           </div>
           {(Object.keys(UNITS) as UType[]).map((t) => (
             <button key={t} onClick={() => setSel(sel === t ? null : t)} disabled={s.ram < UNITS[t].cost}
-              className={`win-btn flex flex-col items-center px-2 py-1 text-xs disabled:opacity-40 ${sel === t ? "win-inset" : ""}`}>
+              className={`win-btn flex w-20 flex-col items-center px-1 py-1 text-xs transition-transform hover:-translate-y-0.5 disabled:opacity-40 ${sel === t ? "win-inset bg-[var(--sel)]" : ""}`}>
               <img src={UNITS[t].img} alt={UNITS[t].name} className="h-9 w-9 object-contain [image-rendering:pixelated]" />
-              {UNITS[t].name}<span>{UNITS[t].cost}</span>
+              <span className="font-bold">{UNITS[t].name}</span>
+              <span className="win-inset mt-0.5 bg-[var(--panel)] px-1 text-[var(--shot)]">{UNITS[t].cost} MB</span>
             </button>
           ))}
           <div className="ml-auto flex items-center gap-2">
-            <span>Wave {s.wave}{s.queue.length ? ` (+${s.queue.length})` : ""}</span>
-            <button onClick={nextWave} className="win-btn bg-[var(--danger)] px-3 py-2 font-bold text-[var(--bsod-fg)]">Next Wave →</button>
+            <div className="win-inset bg-[var(--panel)] px-3 py-2 text-[var(--shot)]">Wave {s.wave}{s.queue.length ? ` (+${s.queue.length})` : ""}</div>
+            <button onClick={nextWave} className="win-btn bg-[var(--danger)] px-4 py-3 font-bold text-[var(--bsod-fg)]">Next Wave →</button>
           </div>
         </div>
-        <div className="relative m-2 select-none overflow-hidden border-2 border-foreground" style={{ aspectRatio: `${COLS}/${ROWS}` }}>
+        <div className="flex min-h-0 flex-1 items-center justify-center p-2">
+        <div className="relative max-h-full max-w-full select-none overflow-hidden border-2 border-foreground" style={{ aspectRatio: `${COLS}/${ROWS}`, height: "100%" }}>
           <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${COLS},1fr)`, gridTemplateRows: `repeat(${ROWS},1fr)` }}>
             {Array.from({ length: ROWS * COLS }, (_, i) => {
               const r = Math.floor(i / COLS), c = i % COLS, k = key(r, c), u = s.units.get(k);
@@ -214,7 +219,7 @@ function Game() {
                   {u && (
                     <>
                       <img src={u.type === "recycle_bin" && u.recycle > 0 ? binGif.url : UNITS[u.type].img} alt={u.type}
-                        className="h-4/5 w-4/5 object-contain [image-rendering:pixelated]" />
+                        className="relative z-10 h-4/5 w-4/5 object-contain [image-rendering:pixelated] drop-shadow-[0_0_2px_var(--outline)]" />
                       <Bar hp={u.hp} max={u.max} />
                       {u.recycle > 0 && <span className="absolute bottom-0 bg-foreground px-1 text-[10px] text-background">{Math.ceil(u.recycle)}s</span>}
                     </>
@@ -224,16 +229,17 @@ function Game() {
             })}
           </div>
           {s.enemies.map((e) => (
-            <div key={e.id} className="pointer-events-none absolute" style={{ left: `${(e.x / COLS) * 100}%`, top: `${(e.row / ROWS) * 100}%`, width: `${100 / COLS}%`, height: `${100 / ROWS}%` }}>
-              <img src={ENEMIES[e.type].img} alt={e.type} className="h-full w-full object-contain p-1 mix-blend-multiply [image-rendering:pixelated]" />
+            <div key={e.id} className="pointer-events-none absolute z-20" style={{ left: `${(e.x / COLS) * 100}%`, top: `${(e.row / ROWS) * 100}%`, width: `${100 / COLS}%`, height: `${100 / ROWS}%` }}>
+              <img src={ENEMIES[e.type].img} alt={e.type} className="h-full w-full object-contain p-1 [image-rendering:pixelated] drop-shadow-[0_0_2px_var(--outline)]" />
               <Bar hp={e.hp} max={e.max} />
             </div>
           ))}
           {s.shots.map((sh) => (
-            <span key={sh.id} className="pointer-events-none absolute font-bold text-[var(--shot)]" style={{ left: `${(sh.x / COLS) * 100}%`, top: `${((sh.row + 0.35) / ROWS) * 100}%` }}>{sh.ch}</span>
+            <span key={sh.id} className="pointer-events-none absolute z-30 font-bold text-[var(--ascii)] drop-shadow-[0_0_2px_var(--outline)]" style={{ left: `${(sh.x / COLS) * 100}%`, top: `${((sh.row + 0.35) / ROWS) * 100}%` }}>{sh.ch}</span>
           ))}
         </div>
-        <p className="px-2 pb-2 text-xs">Pick software, click a tile to install. +25 RAM every 5s. Don't let malware reach the left edge!</p>
+        </div>
+        <p className="px-2 pb-1 text-xs">Pick software, click a tile to install. +25 RAM every 5s. Each virus reaching the left edge costs 1 life.</p>
       </div>
     </div>
   );

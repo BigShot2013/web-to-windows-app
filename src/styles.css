@@ -143,6 +143,13 @@
   --danger: oklch(0.55 0.22 27);
   --hp: oklch(0.7 0.2 145);
   --shot: oklch(0.95 0.18 100);
+  --ascii: #00FF00;
+  --outline: oklch(0.1 0 0);
+  --title-2: oklch(0.55 0.15 245);
+  --panel: oklch(0.15 0 0);
+  --sel: oklch(0.9 0.05 235);
+  --win-dark: oklch(0.5 0 0);
+  --danger-light: oklch(0.65 0.24 25);
 }
 .win-frame { background: var(--win); border: 2px solid; border-color: oklch(1 0 0) oklch(0.3 0 0) oklch(0.3 0 0) oklch(1 0 0); color: oklch(0.1 0 0); }
 .win-btn { background-color: var(--win); border: 2px solid; border-color: oklch(1 0 0) oklch(0.3 0 0) oklch(0.3 0 0) oklch(1 0 0); }
@@ -154,6 +161,7 @@
     border-color: var(--color-border);
   }
 
+  html, body { overflow: hidden; height: 100%; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
