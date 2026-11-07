@@ -69,7 +69,7 @@ function tick(g: G, dt: number) {
       u.t += dt;
       if (u.t >= 1) {
         u.t -= 1;
-        if (g.enemies.some((e) => e.row === r && e.x >= c)) g.shots.push({ id: g.id++, row: r, x: c + 0.6, ch: ASCII[Math.floor(Math.random() * ASCII.length)] });
+        if (g.enemies.some((e) => e.row === r && e.x >= c)) g.shots.push({ id: g.id++, row: r, x: c + 0.6, ch: ASCII.charAt(Math.floor(Math.random() * ASCII.length)) });
       }
     } else if (u.type === "winrar_archiver") {
       for (const e of g.enemies) if (Math.abs(e.row - r) <= 1 && Math.abs(Math.floor(e.x) - c) <= 1) e.hp -= 2 * dt;
