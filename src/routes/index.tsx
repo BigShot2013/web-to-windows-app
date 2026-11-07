@@ -64,7 +64,7 @@ function tick(g: G, dt: number) {
   });
   // units
   for (const [k, u] of g.units) {
-    const [r, c] = k.split(",").map(Number);
+    const [r = 0, c = 0] = k.split(",").map(Number);
     if (u.type === "txt_doc") {
       u.t += dt;
       if (u.t >= 1) {
@@ -88,7 +88,8 @@ function tick(g: G, dt: number) {
         if (g.mines.size < 5) {
           const empty: string[] = [];
           for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++) { const kk = key(rr, cc); if (!g.units.has(kk) && !g.mines.has(kk)) empty.push(kk); }
-          if (empty.length) g.mines.add(empty[Math.floor(Math.random() * empty.length)]);
+          const pick = empty[Math.floor(Math.random() * empty.length)];
+          if (pick) g.mines.add(pick);
         }
       }
     }
