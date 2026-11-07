@@ -132,6 +132,23 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+:root {
+  --desktop: oklch(0.55 0.1 185);
+  --win: oklch(0.8 0 0);
+  --title: oklch(0.3 0.18 265);
+  --bsod: oklch(0.4 0.22 265);
+  --bsod-fg: oklch(0.98 0 0);
+  --tile-a: oklch(0.5 0.17 255);
+  --tile-b: oklch(0.72 0.12 235);
+  --danger: oklch(0.55 0.22 27);
+  --hp: oklch(0.7 0.2 145);
+  --shot: oklch(0.95 0.18 100);
+}
+.win-frame { background: var(--win); border: 2px solid; border-color: oklch(1 0 0) oklch(0.3 0 0) oklch(0.3 0 0) oklch(1 0 0); color: oklch(0.1 0 0); }
+.win-btn { background-color: var(--win); border: 2px solid; border-color: oklch(1 0 0) oklch(0.3 0 0) oklch(0.3 0 0) oklch(1 0 0); }
+.win-btn.bg-\[var\(--danger\)\] { background-color: var(--danger); }
+.win-inset { border: 2px solid; border-color: oklch(0.3 0 0) oklch(1 0 0) oklch(1 0 0) oklch(0.3 0 0); }
+
 @layer base {
   * {
     border-color: var(--color-border);
