@@ -203,7 +203,7 @@ function Game() {
             <button onClick={nextWave} className="win-btn bg-[var(--danger)] px-3 py-2 font-bold text-[var(--bsod-fg)]">Next Wave →</button>
           </div>
         </div>
-        <div className="relative m-2 select-none border-2 border-foreground" style={{ aspectRatio: `${COLS}/${ROWS}` }}>
+        <div className="relative m-2 select-none overflow-hidden border-2 border-foreground" style={{ aspectRatio: `${COLS}/${ROWS}` }}>
           <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${COLS},1fr)`, gridTemplateRows: `repeat(${ROWS},1fr)` }}>
             {Array.from({ length: ROWS * COLS }, (_, i) => {
               const r = Math.floor(i / COLS), c = i % COLS, k = key(r, c), u = s.units.get(k);
@@ -225,7 +225,7 @@ function Game() {
           </div>
           {s.enemies.map((e) => (
             <div key={e.id} className="pointer-events-none absolute" style={{ left: `${(e.x / COLS) * 100}%`, top: `${(e.row / ROWS) * 100}%`, width: `${100 / COLS}%`, height: `${100 / ROWS}%` }}>
-              <img src={ENEMIES[e.type].img} alt={e.type} className="h-full w-full object-contain p-1 [image-rendering:pixelated]" />
+              <img src={ENEMIES[e.type].img} alt={e.type} className="h-full w-full object-contain p-1 mix-blend-multiply [image-rendering:pixelated]" />
               <Bar hp={e.hp} max={e.max} />
             </div>
           ))}
