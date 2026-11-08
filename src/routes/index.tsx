@@ -5,7 +5,7 @@ import rarImg from "@/assets/pixel_winrar.png.asset.json";
 import binImg from "@/assets/trash.png.asset.json";
 import binGif from "@/assets/trash_recycling.gif.asset.json";
 import smileImg from "@/assets/sapper_smile_transparent.png.asset.json";
-import smileReadyGif from "@/assets/sapper_ready_blink.gif.asset.json";
+import smileReadyGif from "@/assets/sapper_ready_blink_fixed.gif.asset.json";
 import wallImg from "@/assets/tetris_shield.png.asset.json";
 import ramImg from "@/assets/ram.png.asset.json";
 import bombImg from "@/assets/bomb.png.asset.json";

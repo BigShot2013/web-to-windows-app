@@ -28,3 +28,5 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- The Windows desktop build uses Electron with `electron/main.cjs`, a relative Vite base, and locally bundled CDN assets so `file://` launches render correctly without relying on the published site.
