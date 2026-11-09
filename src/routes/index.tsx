@@ -188,8 +188,8 @@ function tick(g: G, dt: number) {
     g.enemies.push({ id: g.id++, type: q.type, row: Math.floor(Math.random() * ROWS), x: COLS - 0.01, hp: d.hp, max: d.hp, bite: 0 });
     return false;
   });
-  for (const [k, u] of g.units) {
-    const [r = 0, c = 0] = k.split(",").map(Number);
+  for (const u of g.units.values()) {
+    const { row: r, col: c } = u;
     if (u.type === "txt_doc") {
       u.t += dt;
       if (u.t >= 1) {
@@ -204,7 +204,7 @@ function tick(g: G, dt: number) {
         if (u.recycle <= 0) { u.recycle = 0; g.ram += 50; }
       } else {
         const victim = g.enemies.find((e) => e.row === r && (Math.floor(e.x) === c || Math.floor(e.x) === c + 1));
-        if (victim) { victim.hp = -999; (victim as Enemy & { eaten?: boolean }).eaten = true; u.recycle = 25; }
+        if (victim) { victim.hp = -999; victim.eaten = true; u.recycle = 25; }
       }
     } else if (u.type === "sapper_smiley") {
       u.t = Math.min(SAPPER_CHARGE_SECONDS, u.t + dt);
@@ -228,12 +228,12 @@ function tick(g: G, dt: number) {
     } else {
       e.bite = 0;
       e.x -= ENEMIES[e.type].speed * dt;
-      if (e.x < 0) { e.hp = -999; (e as Enemy & { eaten?: boolean }).eaten = true; g.lives = Math.max(0, g.lives - ENEMIES[e.type].lives); if (g.lives <= 0) { g.over = true; return; } }
+      if (e.x < 0) { e.hp = -999; e.eaten = true; g.lives = Math.max(0, g.lives - ENEMIES[e.type].lives); if (g.lives <= 0) { g.over = true; return; } }
     }
   }
   g.enemies = g.enemies.filter((e) => {
     if (e.hp > 0) return true;
-    if (!(e as Enemy & { eaten?: boolean }).eaten) g.ram += ENEMIES[e.type].reward;
+    if (!e.eaten) g.ram += ENEMIES[e.type].reward;
     return false;
   });
 }
@@ -262,11 +262,18 @@ function Game() {
 
   useEffect(() => {
     if (screen !== "game") return;
-    let last = performance.now(), raf = 0;
+    let last = performance.now(), accumulator = 0, raf = 0;
     const loop = (now: number) => {
-      tick(g.current, Math.min(0.1, (now - last) / 1000));
+      accumulator += Math.min(0.1, (now - last) / 1000);
       last = now;
-      force((n) => n + 1);
+      const wasOver = g.current.over;
+      let updated = false;
+      while (accumulator >= FRAME_STEP) {
+        tick(g.current, FRAME_STEP);
+        accumulator -= FRAME_STEP;
+        updated = true;
+      }
+      if (updated && (!wasOver || !g.current.over)) force((n) => n + 1);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -308,7 +315,7 @@ function Game() {
     const d = UNITS[sel];
     if (s.ram < d.cost) return;
     s.ram -= d.cost;
-    s.units.set(k, { type: sel, hp: d.hp, max: d.hp, t: 0, recycle: 0 });
+    s.units.set(k, { type: sel, row: r, col: c, hp: d.hp, max: d.hp, t: 0, recycle: 0 });
     setSel(null);
   };
   const sell = (r: number, c: number) => {
@@ -427,7 +434,7 @@ function Game() {
             <div className="flex items-center gap-1"><img src={ramImg.url} alt="RAM" className="h-6 w-6 [image-rendering:pixelated]" /><b>{Math.floor(s.ram)} MB</b></div>
             <div className="font-bold text-[var(--bsod-fg)]">{t.health} {s.lives}</div>
           </div>
-          {(Object.keys(UNITS) as UType[]).map((type) => (
+          {UNIT_TYPES.map((type) => (
             <button key={type} onClick={() => { setSel(sel === type ? null : type); setMineSource(null); }} disabled={s.ram < UNITS[type].cost}
               className={`win-btn flex w-20 flex-col items-center px-1 py-1 text-xs transition-transform hover:-translate-y-0.5 disabled:opacity-40 ${sel === type ? "win-inset bg-[var(--sel)]" : ""}`}>
               <img src={UNITS[type].img} alt={UNIT_NAMES[lang][type]} className="h-9 w-9 object-contain [image-rendering:pixelated]" />
@@ -443,8 +450,8 @@ function Game() {
         <div className="flex min-h-0 flex-1 items-center justify-center p-2">
           <div className="relative max-h-full max-w-full select-none overflow-hidden border-2 border-foreground" style={{ aspectRatio: `${COLS}/${ROWS}`, height: "100%" }} onContextMenu={(e) => e.preventDefault()}>
             <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${COLS},1fr)`, gridTemplateRows: `repeat(${ROWS},1fr)` }}>
-              {Array.from({ length: ROWS * COLS }, (_, i) => {
-                const r = Math.floor(i / COLS), c = i % COLS, k = key(r, c), u = s.units.get(k);
+              {CELLS.map(({ row: r, col: c, key: k }) => {
+                const u = s.units.get(k);
                 const sapperReady = u?.type === "sapper_smiley" && u.t >= SAPPER_CHARGE_SECONDS;
                 return (
                   <div key={k} onClick={() => place(r, c)} onContextMenu={(e) => { e.preventDefault(); sell(r, c); }}
