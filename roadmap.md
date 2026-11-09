@@ -7,5 +7,5 @@
 - [x] Test the new rules and verify the main interactions in the browser.
 - [x] Fix the charged Sapper GIF so only the outer background is transparent.
 - [x] Add the stronger red Trojan from wave 3.
-- [ ] Optimize game updates without changing graphics or gameplay balance.
+- [x] Optimize game updates without changing graphics or gameplay balance.
 - [ ] Package and verify a Windows 10/11 x64 ZIP with the red Trojan.
