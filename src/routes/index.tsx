@@ -69,8 +69,8 @@ const ENEMIES = {
   red_trojan: { hp: 40, speed: 0.22, img: redTrojanImg.url, reward: 60, dmg: 2, lives: 2 },
 };
 type EType = keyof typeof ENEMIES;
-interface Unit { type: UType; hp: number; max: number; t: number; recycle: number }
-interface Enemy { id: number; type: EType; row: number; x: number; hp: number; max: number; bite: number }
+interface Unit { type: UType; row: number; col: number; hp: number; max: number; t: number; recycle: number }
+interface Enemy { id: number; type: EType; row: number; x: number; hp: number; max: number; bite: number; eaten?: boolean }
 interface Shot { id: number; row: number; x: number; ch: string }
 interface G {
   ram: number; units: Map<string, Unit>; mines: Set<string>; enemies: Enemy[]; shots: Shot[];
@@ -79,6 +79,12 @@ interface G {
 const key = (r: number, c: number) => `${r},${c}`;
 const fresh = (): G => ({ ram: 300, units: new Map(), mines: new Set(), enemies: [], shots: [], queue: [], lives: 10, time: 0, wave: 0, over: false, ramT: 0, id: 1 });
 const ASCII = "!@#$%&*{}<>/\\?01";
+const UNIT_TYPES = Object.keys(UNITS) as UType[];
+const CELLS = Array.from({ length: ROWS * COLS }, (_, i) => {
+  const row = Math.floor(i / COLS), col = i % COLS;
+  return { row, col, key: key(row, col) };
+});
+const FRAME_STEP = 1 / 30;
 
 const COPY = {
   ru: {
@@ -121,7 +127,7 @@ const COPY = {
       "O-Щит — 50 MB, 20 HP. Прочная стена, которая задерживает вирусов и принимает удары на себя.",
     ],
     helpEnemiesTitle: "Вирусы",
-    helpEnemies: "Червь имеет 10 HP и движется быстро. Троянский конь имеет 30 HP, идёт медленно и выдерживает больше попаданий. Встретив защитника, вирус останавливается и отнимает у него 1 HP раз в секунду.",
+    helpEnemies: "Червь имеет 10 HP и движется быстро. Троянский конь имеет 30 HP, идёт медленно и выдерживает больше попаданий. С 3-й волны появляется красный троян: 40 HP, он немного быстрее, отнимает 2 HP за укус и 2 жизни при прорыве. Обычные вирусы отнимают у защитника 1 HP раз в секунду.",
     helpControlsTitle: "Управление",
     helpControls: "ЛКМ — выбрать программу, установить её или зарядить мину от готового сапёра. ПКМ — продать защитника или мину. Кнопка «Полный экран» вверху окна раскрывает игру на весь экран.",
   },
@@ -165,7 +171,7 @@ const COPY = {
       "O-Shield — 50 MB, 20 HP. A tough wall that holds viruses back and absorbs their attacks.",
     ],
     helpEnemiesTitle: "Viruses",
-    helpEnemies: "The Worm has 10 HP and moves quickly. The Trojan Horse has 30 HP, moves slowly, and withstands more hits. When a virus meets a defender, it stops and deals 1 damage once per second.",
+    helpEnemies: "The Worm has 10 HP and moves quickly. The Trojan Horse has 30 HP, moves slowly, and withstands more hits. Red Trojans appear from wave 3 with 40 HP, slightly more speed, 2 damage per bite, and a 2-life penalty if they break through. Other viruses deal 1 damage to defenders once per second.",
     helpControlsTitle: "Controls",
     helpControls: "Left click — choose and install software, or place a charged Sapper's mine. Right click — sell a defender or mine. The Full Screen button at the top expands the game to fill your screen.",
   },
