@@ -11,6 +11,7 @@ import ramImg from "@/assets/ram.png.asset.json";
 import bombImg from "@/assets/bomb.png.asset.json";
 import wormImg from "@/assets/worm_virus_walk.gif.asset.json";
 import trojanImg from "@/assets/troyan_horse_wood.png.asset.json";
+import redTrojanImg from "@/assets/red_trojan.png.asset.json";
 import blissImg from "@/assets/bliss.png.asset.json";
 import {
   canStartWave,
@@ -63,8 +64,9 @@ const UNIT_NAMES: Record<Lang, Record<UType, string>> = {
   },
 };
 const ENEMIES = {
-  worm: { hp: 10, speed: 0.45, img: wormImg.url, reward: 15 },
-  trojan: { hp: 30, speed: 0.18, img: trojanImg.url, reward: 40 },
+  worm: { hp: 10, speed: 0.45, img: wormImg.url, reward: 15, dmg: 1, lives: 1 },
+  trojan: { hp: 30, speed: 0.18, img: trojanImg.url, reward: 40, dmg: 1, lives: 1 },
+  red_trojan: { hp: 40, speed: 0.22, img: redTrojanImg.url, reward: 60, dmg: 2, lives: 2 },
 };
 type EType = keyof typeof ENEMIES;
 interface Unit { type: UType; hp: number; max: number; t: number; recycle: number }
@@ -216,11 +218,11 @@ function tick(g: G, dt: number) {
     const u = g.units.get(mk);
     if (u) {
       e.bite += dt;
-      if (e.bite >= 1) { e.bite -= 1; u.hp -= 1; if (u.hp <= 0) g.units.delete(mk); }
+      if (e.bite >= 1) { e.bite -= 1; u.hp -= ENEMIES[e.type].dmg; if (u.hp <= 0) g.units.delete(mk); }
     } else {
       e.bite = 0;
       e.x -= ENEMIES[e.type].speed * dt;
-      if (e.x < 0) { e.hp = -999; (e as Enemy & { eaten?: boolean }).eaten = true; g.lives--; if (g.lives <= 0) { g.over = true; return; } }
+      if (e.x < 0) { e.hp = -999; (e as Enemy & { eaten?: boolean }).eaten = true; g.lives = Math.max(0, g.lives - ENEMIES[e.type].lives); if (g.lives <= 0) { g.over = true; return; } }
     }
   }
   g.enemies = g.enemies.filter((e) => {
@@ -271,10 +273,10 @@ function Game() {
     if (!canStartWave(s.queue.length, s.enemies.length) || s.over) return;
     s.wave++;
     const n = s.wave;
-    const worms = 2 + n * 2, trojans = Math.floor(n / 2) + (n >= 3 ? n - 2 : 0);
+    const worms = 2 + n * 2, trojans = Math.floor(n / 2) + (n >= 3 ? n - 2 : 0), reds = n >= 3 ? Math.floor((n - 1) / 2) : 0;
     const gap = Math.max(0.8, 3 - n * 0.2);
     let time = s.time + 1;
-    const list: EType[] = [...Array(worms).fill("worm"), ...Array(trojans).fill("trojan")].sort(() => Math.random() - 0.5);
+    const list: EType[] = [...Array(worms).fill("worm"), ...Array(trojans).fill("trojan"), ...Array(reds).fill("red_trojan")].sort(() => Math.random() - 0.5);
     for (const type of list) { s.queue.push({ at: time, type }); time += gap * (0.6 + Math.random() * 0.8); }
   };
   const place = (r: number, c: number) => {
